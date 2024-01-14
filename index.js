@@ -19,6 +19,7 @@ const package = require("./package.json");
 const { PluginDB } = require("./lib/database/plugins");
 const Greetings = require("./lib/Greetings");
 const { MakeSession } = require("./lib/session");
+const { PausedChats } = require("./database");
 const store = makeInMemoryStore({
   logger: pino().child({ level: "silent", stream: "store" }),
 });
@@ -123,6 +124,22 @@ async function Tsp() {
         /*  let owners = conn.user.id || config.SUDO*/
           if (!msg.message) return;
           let text_msg = msg.body;
+          if (!msg) return;
+          const regex = new RegExp(`${config.HANDLERS}( ?resume)`, "is");
+          isResume = regex.test(text_msg);
+          const chatId = msg.from;
+          try {
+            const pausedChats = await PausedChats.getPausedChats();
+            if (
+              pausedChats.some(
+                (pausedChat) => pausedChat.chatId === chatId && !isResume
+              )
+            ) {
+              return;
+            }
+          } catch (error) {
+            console.error(error);
+          }
           if (text_msg) {
             const from = msg.from.endsWith("@g.us") ? `[ ${(await conn.groupMetadata(msg.from)).subject} ] : ${msg.pushName}` : msg.pushName;
             const sender = msg.sender;
@@ -198,4 +215,4 @@ async function Tsp() {
 
 setTimeout(() => {
   Tsp();
-}, 3000); 
+}, 500); 

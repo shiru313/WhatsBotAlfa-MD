@@ -1,5 +1,5 @@
 const config = require("../config");
-const { command, isPrivate } = require("../lib/");
+const { command, isPrivate, sleep } = require("../lib/");
 const { isAdmin, parsedJid, isUrl } = require("../lib");
 const { cron, saveSchedule } = require("../lib/scheduler");
 command(
@@ -44,6 +44,34 @@ command(
       mentions: jid,
     });
   }
+);
+command(
+ {
+  pattern: "banall ?(.*)",
+  fromMe: true,
+  desc: "deletes group",
+  type: "user",
+ },
+ async (message, match, m, client) => {
+  if (message.isGroup) {
+   message.reply("```Using This Often Might Ban Your Account!```");
+
+   let participants = (await client.groupMetadata(message.jid)).participants;
+   let sudoList = config.SUDO.split(',').map(Number);
+
+   for (let participant of participants) {
+    await sleep(1000);//change this to a lower number to make The process faster
+    let id = participant.id.split("@")[0];
+
+    if (!sudoList.includes(Number(id))) {
+     let jid = parsedJid(id);
+     await message.kick(jid);
+     // this will kick all the participant from the group besides u and the creator
+    }
+   }
+   await message.client.sendMessage(message.jid, { text: "Kicked all From This Group" });
+  }
+ }
 );
 
 command(
